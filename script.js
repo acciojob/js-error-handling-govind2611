@@ -1,45 +1,68 @@
-//your code here
 class OutOfRangeError extends Error {
-  constructor(arg) {
-    super(`Expression should only consist of integers and +-/* characters and not ${arg}`);
-    this.name = this.constructor.name;
+  constructor(msg) {
+    super(msg);
+    this.name = "OutOfRangeError";
   }
 }
 
 class InvalidExprError extends Error {
-  constructor() {
-    super('Expression should not have an invalid combination of expression');
-    this.name = this.constructor.name;
+  constructor(msg) {
+    super(msg);
+    this.name = "InvalidExprError";
   }
 }
 
-function evalString(str) {
-  try {
-    if (/^\+|\*|\//.test(str)) {
-      throw new SyntaxError('Expression should not start with invalid operator');
-    }
-    if (/\+|\*|\/-$/.test(str)) {
-      throw new SyntaxError('Expression should not end with invalid operator');
-    }
-    if (/\+\+|--|\*\*|\/\*|\*\//.test(str)) {
-      throw new InvalidExprError();
-    }
-    return eval(str);
-  } catch (err) {
-    if (err instanceof SyntaxError) {
-      throw err;
-    }
-    throw new OutOfRangeError(err.message);
-  }
+function isOperator(char) {
+  return ["+", "-", "*", "/"].includes(char);
 }
 
-// Example usage:
+function isInteger(str) {
+  return /^\d+$/.test(str);
+}
+
+function evalString(expr) {
+  let prevChar = null;
+
+  for (let i = 0; i < expr.length; i++) {
+    const char = expr[i];
+
+    if (char === " ") {
+      // skip spaces
+      continue;
+    } else if (isOperator(char)) {
+      // check for invalid operator combination
+      if (prevChar !== null && isOperator(prevChar)) {
+        throw new InvalidExprError(
+          "Expression should not have an invalid combination of operators"
+        );
+      }
+    } else if (!isInteger(char)) {
+      // check for invalid character
+      throw new OutOfRangeError(
+        "Expression should only consist of integers and +-/* characters"
+      );
+    }
+
+    prevChar = char;
+  }
+
+  // check for invalid starting operator
+  if (isOperator(expr[0])) {
+    throw new SyntaxError("Expression should not start with invalid operator");
+  }
+
+  // check for invalid ending operator
+  if (isOperator(expr[expr.length - 1])) {
+    throw new SyntaxError("Expression should not end with invalid operator");
+  }
+
+  // evaluate the expression
+  return eval(expr);
+}
+
 try {
-  console.log(evalString('1 + 2 * 3 - 4 / 2')); // Output: 6
-  console.log(evalString('1 + 2 * 3 - 4 / 2 / 0')); // Throws OutOfRangeError
-  console.log(evalString('1 + 2 * 3 - 4 / 2++')); // Throws InvalidExprError
-  console.log(evalString('++1 + 2 * 3 - 4 / 2')); // Throws SyntaxError
-  console.log(evalString('1 + 2 ** 3 - 4 / 2')); // Throws InvalidExprError
-} catch (err) {
-  console.error(err);
+  const expr = "1 + 2 - 3 * 4 / -5";
+  console.log(evalString(expr));
+} catch (error) {
+  console.log(error.name + ": " + error.message);
 }
